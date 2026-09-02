@@ -1,0 +1,14 @@
+; Publish the negotiate entry point UNDECORATED.
+;
+; XRAPI_CALL is __stdcall. On x86 a plain __declspec(dllexport) therefore publishes
+; _xrNegotiateLoaderApiLayerInterface@12, the OpenXR loader looks up the undecorated
+; xrNegotiateLoaderApiLayerInterface, does not find it, and xrCreateInstance fails with
+; XR_ERROR_API_LAYER_NOT_PRESENT (-36) -- while the application runs perfectly and records nothing.
+;
+; On x64 there is no __stdcall decoration, so this file changes nothing there. That asymmetry is
+; why the bug survived every x64 client and surfaced on the first 32-bit one (Far Cry 2, 2026-08-31).
+;
+; A .def rather than a linker pragma because the pragma has to name the decorated symbol, which
+; only exists on x86 and would have to be #ifdef'd per architecture.
+EXPORTS
+    xrNegotiateLoaderApiLayerInterface
