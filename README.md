@@ -137,3 +137,8 @@ recorded everything, right up until you read the results.
 Only the OpenXR headers are required to build. A pinned copy is bundled under
 `third_party/openxr`; advanced builds can override it with
 `-DXRTAPE_OPENXR_INCLUDE=`.
+
+The installer writes API-layer manifests as BOM-free UTF-8 and validates the
+installed JSON before returning. Preserve that explicit encoding: Windows
+PowerShell 5.1's `Set-Content -Encoding UTF8` adds a BOM that the OpenXR loader
+rejects at byte zero.

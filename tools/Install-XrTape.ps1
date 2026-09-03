@@ -46,7 +46,19 @@ $payload = [ordered]@{
         description            = 'xr-tape - records what the application submits to OpenXR'
     }
 }
-$payload | ConvertTo-Json -Depth 5 | Set-Content -LiteralPath $manifest -Encoding UTF8
+$json = $payload | ConvertTo-Json -Depth 5
+# Windows PowerShell 5.1's `Set-Content -Encoding UTF8` prepends a BOM. The
+# OpenXR loader rejects that manifest at byte zero, so specify BOM-free UTF-8
+# explicitly and verify the installed artifact before reporting success.
+[IO.File]::WriteAllText($manifest, $json, [Text.UTF8Encoding]::new($false))
+$manifestBytes = [IO.File]::ReadAllBytes($manifest)
+if ($manifestBytes.Length -ge 3 -and
+        $manifestBytes[0] -eq 0xEF -and
+        $manifestBytes[1] -eq 0xBB -and
+        $manifestBytes[2] -eq 0xBF) {
+    throw "manifest unexpectedly contains a UTF-8 BOM: $manifest"
+}
+$null = Get-Content -LiteralPath $manifest -Raw -ErrorAction Stop | ConvertFrom-Json
 
 [pscustomobject]@{
     Architecture = $Architecture
