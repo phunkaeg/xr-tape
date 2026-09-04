@@ -110,6 +110,11 @@ recorded everything, right up until you read the results.
 
 ## Known limits
 
+- **It records OpenXR, not OpenVR.** OpenVR is a separate API, so this layer
+  cannot observe `IVRCompositor::Submit` even when it loads into the same
+  process. DishonoredVR's shipping OpenVR path needs a separate OpenVR proxy or
+  observer; an empty xr-tape trace is not evidence that OpenVR submitted no
+  frames.
 - **It sees only applications that use the Khronos loader.** A probe that
   `LoadLibrary`s a runtime DLL and calls its dispatch table directly never
   creates a loader instance, so there is nothing to insert a layer into.
