@@ -99,6 +99,33 @@ image is a lie the validator is satisfied by. PreyVR measured it: Prey renders *
 zero asymmetry**; a Quest 3 reports `l -54.0, r +40.0, u +44.0, d -55.0`. Declaring honestly makes the
 right edge differ by **20°** and this check fails — *"that failure is the pass."*
 
+### A third row: the mod itself changed the projection
+
+The table above splits mods by whether they **can** force the engine's projection. There is a case it
+does not cover, and it is invisible to every check on this page.
+
+A mod may render through the game's frustum *most* of the time and replace it on some path of its own --
+a synthetic per-eye frustum, a letterbox, an asymmetry experiment. When it does, the declaration must
+follow, and nothing at the OpenXR boundary can tell when it has not. The mod is then in row two,
+declaring the game's frustum honestly, while its pixels came from a frustum it built itself.
+
+PreyVR shipped exactly this on 2026-09-05. Its `SetNativeProjection` flag chooses between "build the eye
+by translation alone and keep Prey's projection" and "replace the projection with a synthetic half-FOV
+frustum carrying mirrored asymmetry". The flag **defaults off**, and the declaration path kept reading
+Prey's own camera either way. So: 50 degree half-angle rendered, 60 declared, mirrored asymmetry over a
+symmetric declaration. `submitted_fov_matches_located` was **failing throughout, which is its correct
+state for an injector** -- the trace looked exactly as it should.
+
+In the headset it read as three unrelated faults: wall-eyed divergence, a horizontal stretch, and the
+dynamic sun swinging with head yaw. All three cleared the instant the flag was set.
+
+**So the actionable rule is:** a mod that can rewrite the projection owes an **in-process** assert
+comparing what it declares against what it rendered, in tangent space, at the point the declaration is
+bound to the pixels. That is the third quantity this document opens by saying no API layer can see, and
+this is the case that proves the gap is not theoretical. PreyVR now carries one
+(`PreyVR_GetDeclaredFovDivergeCount`); the pattern is `STR-011` in the fleet playbook and the symptom
+row is `FAIL-STR-048`.
+
 **The runtime cannot detect the lie.** It reprojects to whatever is claimed, so the error surfaces as
 wrong depth and wrong scale rather than as an error — which is why the instinct to turn a red check green
 is the exact wrong move here.
