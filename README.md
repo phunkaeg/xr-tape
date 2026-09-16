@@ -121,8 +121,13 @@ recorded everything, right up until you read the results.
   Sims4VR's `xrprobe` is deliberately built that way; real mods use the loader.
 - **v1 records geometry, contract and timing — not pixels.** That is where the
   most generic checks live, and it is what keeps one binary working across every
-  graphics binding. Per-eye image capture is the v2 boundary; xr-sim already does
-  it for D3D11.
+  graphics binding. `eye_subimages_distinct` proves different submitted resource
+  identities, not different or correct pixel content; BioShock session 74's
+  per-eye hand/weapon divergence is invisible here by construction. Per-eye
+  capture is the v2 boundary and requires a separately synchronized backend for
+  each graphics API; xr-sim already provides the D3D11 reference implementation.
+  [The staged extension design](docs/PIXEL_CAPTURE.md) defines the capture point,
+  renderer backends, additive trace records, and required negative controls.
 - **A pass is not a headset.** Comfort, depth, world scale and whether something
   *feels* right remain irreducibly human.
 

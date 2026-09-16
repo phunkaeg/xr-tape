@@ -56,6 +56,29 @@ these survive a trace where the head is turned, which is every real trace.
 | `eyes_parallel` | the eye orientations differ (toe-in) | |
 | `eye_subimages_distinct` | both eyes were sent the same swapchain, array index and rect | `FAIL-STR-001` |
 
+### Distinct subimages are not distinct content
+
+`eye_subimages_distinct` observes resource identity—the swapchain, array index,
+and image rectangle named in each projection view. It does not read the pixels.
+Two distinct eye resources can therefore pass while containing identical,
+stale, or otherwise incorrect content.
+
+BioShock session 74 is the complementary failure: the eye resources, pairing,
+pose, FOV, and display time were clean, but an engine skeleton restamp made the
+hand/weapon content differ between the two render passes. The wire trace is
+expected to remain green for that defect. It is invisible to xr-tape by
+construction and requires an application-owned production counter, an
+upstream pixel capture, or both.
+
+The reverse also matters. A left/right image delta captured downstream of a
+compositor cannot reliably detect mono submission: presenting one source image
+at two eye poses can place the result inside the normal parallax band. A
+deliberate BioShock mono control measured mean 54.8 inside its calibrated band
+while its per-eye replay rate collapsed from 90 to 0. Use xr-tape's upstream
+subimage identity plus the application's rate counter as the mono guard; use
+image comparisons for content faults. A clean result from either instrument
+does not inherit the other's coverage.
+
 ## Submitted versus located
 
 **These two are the reason the recorder sits at the loader boundary.** No
@@ -164,6 +187,16 @@ decidable from geometry, contract and timing alone.
 riding the head · `FAIL-STR-023` per-eye LOD and billboard divergence ·
 `FAIL-STR-024` one eye black on specific screens · `FAIL-STR-029` a captured eye
 containing an older frame.
+
+An opt-in pixel extension is feasible, but it is not renderer-neutral. A D3D11
+implementation must retain the application's enumerated textures, copy the
+submitted subresources with correct array-slice and GPU synchronization before
+reuse, and write images or hashes out of the interception path. D3D12, Vulkan,
+OpenGL, and legacy bridge routes each require separate ownership and
+synchronization code. Until those backends exist and are falsified separately,
+`SKIP` is the only honest result for pixel-content checks.
+See [PIXEL_CAPTURE.md](PIXEL_CAPTURE.md) for an implementation-ready staged
+design and falsification matrix.
 
 **Needs the game, or a person:**
 world scale, comfort, depth judgement, whether an unlit hand reads in a dark
